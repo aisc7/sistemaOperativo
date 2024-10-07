@@ -28,12 +28,6 @@ class TaskBar(QWidget):
         self.clock_label.setStyleSheet("color: white; font-size: 14pt; font-weight: bold;")
         taskbar_layout.addWidget(self.clock_label)
 
-        # Botón del administrador de tareas
-        self.show_task_manager_button = QPushButton("Task Manager")
-        self.show_task_manager_button.setStyleSheet("color: white; background-color: rgb(100, 50, 100); border-radius: 5px; padding: 5px;")
-        self.show_task_manager_button.clicked.connect(parent.show_task_manager)
-        taskbar_layout.addWidget(self.show_task_manager_button)
-
         # Icono de batería
         self.battery_label = QLabel()
         self.update_battery_status()  # Inicializa el estado de la batería

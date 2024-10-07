@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QListWidget
-import psutil  # Asegúrate de tener instalado el paquete psutil
+import psutil 
 
 class TaskManager(QWidget):
     def __init__(self, parent=None):
@@ -22,9 +22,12 @@ class TaskManager(QWidget):
     def update_process_list(self):
         """Actualizar la lista de procesos en el Task Manager."""
         self.process_list.clear()  # Limpiar la lista antes de actualizar
-        processes = psutil.process_iter(['pid', 'name'])
-        for process in processes:
-            try:
-                self.process_list.addItem(f"{process.info['pid']} - {process.info['name']}")
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
+        try:
+            processes = psutil.process_iter(['pid', 'name'])
+            for process in processes:
+                try:
+                    self.process_list.addItem(f"{process.info['pid']} - {process.info['name']}")
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception as e:
+            print(f"Error al obtener la lista de procesos: {e}")
