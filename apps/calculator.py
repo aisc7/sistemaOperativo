@@ -1,23 +1,28 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton, QGridLayout, QApplication
-from PySide6.QtCore import QSize
+from PySide6.QtCore import Qt
 import sys
 
 class Calculator(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        
+        # Configuración de la ventana
         self.setWindowTitle("Calculator")
         self.setGeometry(300, 300, 300, 400)
         self.setStyleSheet("background-color: #2B2B2B; border-radius: 10px;")  # Cambiar el color de fondo
 
+        # Asegurarse de que la ventana tenga banderas adecuadas
+        self.setWindowFlags(Qt.Window)  # Asegurarse de que la ventana tenga el comportamiento estándar de Qt
+
         layout = QVBoxLayout(self)
 
-        # Display
+        # Pantalla de la calculadora
         self.display = QLineEdit()
         self.display.setReadOnly(True)  # Solo lectura para evitar entradas directas
-        self.display.setStyleSheet("font-size: 24px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #FFFFFF;")  # Fondo blanco para la pantalla
+        self.display.setStyleSheet("font-size: 24px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #FFFFFF;")
         layout.addWidget(self.display)
 
-        # Botones en formato de cuadrícula
+        # Botones de la calculadora
         grid = QGridLayout()
         buttons = [
             ('C', 0, 0), ('7', 0, 1), ('8', 0, 2), ('9', 0, 3), ('/', 0, 4),
@@ -46,7 +51,7 @@ class Calculator(QWidget):
         close_button.setFixedSize(60, 40)
         close_button.setStyleSheet("font-size: 16px; background-color: #FF5733; color: white; border: none; border-radius: 5px;")
         close_button.clicked.connect(self.close)  # Conectar el botón de cierre
-        layout.addWidget(close_button)  # Añadir el botón de cierre al layout
+        layout.addWidget(close_button)
 
     def on_click(self):
         button = self.sender().text()
@@ -56,7 +61,7 @@ class Calculator(QWidget):
                 expression = self.display.text()
                 result = str(eval(expression))
                 self.display.setText(result)
-            except Exception as e:
+            except Exception:
                 self.display.setText("Error")
         elif button == 'C':
             self.display.clear()  # Limpiar la pantalla al presionar 'C'

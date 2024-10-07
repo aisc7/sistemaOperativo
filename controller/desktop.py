@@ -79,8 +79,8 @@ class Desktop(QMainWindow):
     def open_calculator(self):
         """Abrir la calculadora."""
         if not self.calculator.isVisible():
-            self.calculator.show()
-            self.calculator.raise_()  # Asegúrate de que esté en primer plano
+            self.calculator.show()  # Asegúrate de que esto muestre la ventana
+            self.calculator.raise_()  # Llevar la ventana al frente
         self.task_manager.update_apps_in_use()  # Actualizar la lista de apps abiertas
 
     def open_docs(self):
