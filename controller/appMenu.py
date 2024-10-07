@@ -35,8 +35,6 @@ class AppMenu(QFrame):
         close_button_layout.addWidget(close_button)
         self.layout.addLayout(close_button_layout)
 
-        self.docs_window = None
-
     def add_app_button(self, name, icon_path, action=None):
         app_button = QPushButton()
         app_button.setIcon(QIcon(icon_path))
@@ -51,14 +49,12 @@ class AppMenu(QFrame):
         self.setVisible(False)
 
     def open_docs(self):
-        if not self.docs_window:
-            self.docs_window = Docs()
-        self.docs_window.show()
+        if not self.parent().docs_window.isVisible():
+            self.parent().docs_window.show()
 
     def open_calculator(self):
-        """Abrir la ventana de la calculadora."""
-        self.calculator = Calculator(self)  # Crea una instancia de Calculator
-        self.calculator.show()  # Muestra la ventana de la calculadora
+        if not self.parent().calculator.isVisible():
+            self.parent().calculator.show()
 
     def open_recycle_bin(self):
         print("Open Recycle Bin")
