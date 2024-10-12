@@ -161,22 +161,48 @@ class LoginWindow(QWidget):
         return hashlib.sha256(password.encode()).hexdigest()
 
     def handle_login(self):
-        user_database, first_user = self.user_database, self.current_username
+        """Maneja la lógica del inicio de sesión."""
+        user_database, _ = self.load_user_database()
 
-        if first_user:
-            username = first_user
-            password = self.password_input.text()
-            if username in user_database:
-                hashed_password = user_database[username]['password']
-                if self.hash_password(password) == hashed_password:
-                    QMessageBox.information(self, "Success", f"Welcome, {username}!")
-                    self.open_desktop()
+        username = self.current_username  # El usuario actual seleccionado
+        password = self.password_input.text()  # Contraseña ingresada
+
+        # Verificar si el nombre de usuario existe en la base de datos
+        if username in user_database:
+            hashed_password = user_database[username]['password']  # Hash de la contraseña almacenada
+            user_role = user_database[username].get('role', 'user')  # Obtener el rol, por defecto 'user'
+
+            # Verificar la contraseña
+            if self.hash_password(password) == hashed_password:
+                # Mostrar mensaje de éxito
+                QMessageBox.information(self, "Success", f"Welcome, {username}! Role: {user_role}")
+                
+                # Personalizar según el rol
+                if user_role == "admin":
+                    self.show_admin_controls()  # Método para mostrar controles de administrador
                 else:
-                    QMessageBox.warning(self, "Error", "Incorrect password.")
+                    self.show_user_controls()  # Método para mostrar controles de usuario normal
+                
+                # Abrir la ventana del escritorio (según el rol)
+                self.open_desktop()
             else:
-                QMessageBox.warning(self, "Error", "Username does not exist.")
+                QMessageBox.warning(self, "Error", "Incorrect password.")
         else:
-            QMessageBox.warning(self, "Error", "No users found. Please create a user.")
+            QMessageBox.warning(self, "Error", "Username does not exist.")
+            
+    def show_admin_controls(self):
+        """Muestra controles adicionales si el usuario es administrador."""
+        # Por ejemplo, habilitar botones o funcionalidades para administrar el sistema
+        self.admin_button = QPushButton("Admin Settings")
+        self.admin_button.setStyleSheet(self.get_button_style())
+        self.admin_button.clicked.connect(self.open_admin_panel)  # Conectar a una función que abra el panel de admin
+        self.right_layout.addWidget(self.admin_button)
+
+    def show_user_controls(self):
+        """Muestra la interfaz normal para usuarios."""
+        # Aquí se pueden agregar funcionalidades específicas solo para usuarios
+        pass
+            
 
     def open_password_recovery(self):
         self.password_recovery_window = PasswordRecoveryWindow()
