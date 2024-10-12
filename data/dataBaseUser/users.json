@@ -1,14 +1,1 @@
-{
-    "Isabella": {
-        "id": "777",
-        "password": "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
-    },
-    "Mora": {
-        "id": "2",
-        "password": "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
-    },
-    "Ana": {
-        "id": "34335",
-        "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    }
-}
+{"Isabella": {"id": "777", "password": "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"}, "Mora": {"id": "2", "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"}, "Ana": {"id": "34335", "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"}, "Nico": {"password": "35e1d1aeed3f7179b02a0dfde8f4e826e191649ee2acfd6da6b2ce7a12aa0f8b"}, "Tina": {"password": "7688b6ef52555962d008fff894223582c484517cea7da49ee67800adc7fc8866"}}

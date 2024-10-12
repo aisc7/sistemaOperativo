@@ -17,15 +17,16 @@ class AppMenu(QFrame):
         self.app_buttons_layout = QVBoxLayout()
 
         # Agregar botones para aplicaciones
-        self.add_app_button("Calculator", "data/icons/calc.png", self.open_calculator)
-        self.add_app_button("Task Manager", "data/icons/task.png", parent.show_task_manager)
-        self.add_app_button("My Documents", "data/icons/docs.png", self.open_docs)
-        self.add_app_button("Recycle Bin", "data/icons/trash.png", self.open_recycle_bin)
-        self.add_app_button("My Computer", "data/icons/pc.png", self.open_my_computer)
-        self.add_app_button("Spotife", "data/icons/music.png", self.open_music_player)
+        self.add_app_button("Calculator", "data/icons/calc.png", self.parent().open_calculator)
+        self.add_app_button("Task Manager", "data/icons/task.png", self.parent().show_task_manager)
+        self.add_app_button("My Documents", "data/icons/docs.png", self.parent().open_docs)
+        self.add_app_button("Recycle Bin", "data/icons/trash.png", self.parent().open_recycle_bin)
+        self.add_app_button("User Panel", "data/icons/pc.png", self.parent().open_user_panel)
+        self.add_app_button("Music Player", "data/icons/music.png", self.open_music_player)
 
         self.layout.addLayout(self.app_buttons_layout)
 
+        # Botón de cierre
         close_button_layout = QHBoxLayout()
         close_button_layout.addStretch()
         close_button = QPushButton("X")
@@ -47,20 +48,6 @@ class AppMenu(QFrame):
 
     def close_menu(self):
         self.setVisible(False)
-
-    def open_docs(self):
-        if not self.parent().docs_window.isVisible():
-            self.parent().docs_window.show()
-
-    def open_calculator(self):
-        if not self.parent().calculator.isVisible():
-            self.parent().calculator.show()
-
-    def open_recycle_bin(self):
-        print("Open Recycle Bin")
-
-    def open_my_computer(self):
-        print("Open My Computer")
 
     def open_music_player(self):
         try:

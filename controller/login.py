@@ -16,7 +16,7 @@ class LoginWindow(QWidget):
 
         # Cargar la base de datos de usuarios
         self.user_database = self.load_user_database("data/dataBaseUser/users.json")
-        
+
         # Inicializamos el usuario actual con el primer usuario en la base de datos o un valor por defecto
         if self.user_database:
             self.current_username = list(self.user_database.keys())[0]  # Primer usuario en la base de datos
@@ -42,21 +42,14 @@ class LoginWindow(QWidget):
         main_layout.addStretch(1)
 
         right_container = QWidget()
-        right_layout = QVBoxLayout(right_container)
-        right_layout.setContentsMargins(15, 15, 15, 15)
+        self.right_layout = QVBoxLayout(right_container)  # Guardar el layout en un atributo
+        self.right_layout.setContentsMargins(15, 15, 15, 15)
 
         # Crear la imagen del perfil de usuario
         self.user_image_label = QLabel()
-        user_image_path = os.path.abspath("data/user_image.jpeg")
-        if os.path.exists(user_image_path):
-            self.user_image_pixmap = QPixmap(user_image_path)
-            rounded_pixmap = self.get_round_pixmap(self.user_image_pixmap, 400)
-            self.user_image_label.setPixmap(rounded_pixmap)
-        else:
-            print(f"Error: User image not found at: {user_image_path}")
-
+        self.load_user_image(self.current_username)  # Cargar imagen del usuario
         self.user_image_label.setAlignment(Qt.AlignCenter)
-        right_layout.addWidget(self.user_image_label)
+        self.right_layout.addWidget(self.user_image_label)
 
         # Botón para mostrar el nombre de usuario actual
         self.username_button = QPushButton(self.current_username)
@@ -71,7 +64,7 @@ class LoginWindow(QWidget):
         }
         """)
         self.username_button.setFlat(True)
-        right_layout.addWidget(self.username_button)
+        self.right_layout.addWidget(self.username_button)
 
         # Campo de entrada para la contraseña
         form_layout = QFormLayout()
@@ -90,7 +83,7 @@ class LoginWindow(QWidget):
         password_label = QLabel("Password:")
         password_label.setStyleSheet("color: white; font-weight: bold;")
         form_layout.addRow(password_label, self.password_input)
-        right_layout.addLayout(form_layout)
+        self.right_layout.addLayout(form_layout)
 
         button_style = """
         QPushButton {
@@ -119,9 +112,9 @@ class LoginWindow(QWidget):
         self.login_button.clicked.connect(self.handle_login)
         self.forgot_password_button.clicked.connect(self.open_password_recovery)
 
-        right_layout.addWidget(self.change_user_button)
-        right_layout.addWidget(self.login_button)
-        right_layout.addWidget(self.forgot_password_button)
+        self.right_layout.addWidget(self.change_user_button)
+        self.right_layout.addWidget(self.login_button)
+        self.right_layout.addWidget(self.forgot_password_button)
 
         main_layout.addWidget(right_container)
 
@@ -145,6 +138,24 @@ class LoginWindow(QWidget):
             print(f"Error loading user database: {e}")
             return {}
 
+    def load_user_image(self, username):
+        """Carga la imagen del usuario basado en el nombre de usuario."""
+        image_path = f"./data/userImage/{username}.jpg"  # Ruta de la imagen del usuario
+        if os.path.exists(image_path):
+            pixmap = QPixmap(image_path)
+            rounded_pixmap = self.get_round_pixmap(pixmap, 400)
+            self.user_image_label.setPixmap(rounded_pixmap)  # Establecer el pixmap redondeado
+        else:
+            # Si no hay imagen del usuario, cargar una imagen por defecto
+            default_image_path = "./data/userImage/default_user.png"
+            if os.path.exists(default_image_path):
+                pixmap = QPixmap(default_image_path)
+                rounded_pixmap = self.get_round_pixmap(pixmap, 400)
+                self.user_image_label.setPixmap(rounded_pixmap)  # Establecer el pixmap por defecto
+            else:
+                print("No se encontró la imagen del usuario ni la imagen por defecto.")
+                self.user_image_label.clear()  # Limpiar el QLabel si no hay imagen
+
     def get_round_pixmap(self, pixmap, size):
         rounded_pixmap = QPixmap(size, size)
         rounded_pixmap.fill(Qt.transparent)
@@ -162,27 +173,23 @@ class LoginWindow(QWidget):
 
     def handle_login(self):
         """Maneja la lógica del inicio de sesión."""
-        user_database, _ = self.load_user_database()
-
         username = self.current_username  # El usuario actual seleccionado
         password = self.password_input.text()  # Contraseña ingresada
 
         # Verificar si el nombre de usuario existe en la base de datos
-        if username in user_database:
-            hashed_password = user_database[username]['password']  # Hash de la contraseña almacenada
-            user_role = user_database[username].get('role', 'user')  # Obtener el rol, por defecto 'user'
+        if username in self.user_database:
+            hashed_password = self.user_database[username]['password']  # Hash de la contraseña almacenada
+            user_role = self.user_database[username].get('role', 'user')  # Obtener el rol, por defecto 'user'
 
             # Verificar la contraseña
             if self.hash_password(password) == hashed_password:
-                # Mostrar mensaje de éxito
-                QMessageBox.information(self, "Success", f"Welcome, {username}! Role: {user_role}")
-                
+           
                 # Personalizar según el rol
                 if user_role == "admin":
                     self.show_admin_controls()  # Método para mostrar controles de administrador
                 else:
                     self.show_user_controls()  # Método para mostrar controles de usuario normal
-                
+
                 # Abrir la ventana del escritorio (según el rol)
                 self.open_desktop()
             else:
@@ -217,7 +224,7 @@ class LoginWindow(QWidget):
         self.current_username = username
         self.username_button.setText(username)
         self.password_input.clear()
-        self.load_user_image(username)
+        self.load_user_image(username)  # Cargar la imagen del nuevo usuario
         QMessageBox.information(self, "User Changed", f"Current user changed to: {username}")
 
     def open_desktop(self):
@@ -229,7 +236,6 @@ class LoginWindow(QWidget):
         current_time = QTime.currentTime()
         self.clock_label.setText(current_time.toString("hh:mm:ss"))
 
-
 class PasswordRecoveryWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -327,6 +333,22 @@ class PasswordRecoveryWindow(QWidget):
                 self.user_selection_combo.addItem(username)
         else:
             QMessageBox.warning(self, "Error", "No users found in the database.")
+            
+    def load_user_image(self, username):
+        """Carga la imagen del usuario basado en el nombre de usuario."""
+        image_path = f"./data/useImages/{username}.jpg"  
+        if os.path.exists(image_path):
+            pixmap = QPixmap(image_path)
+            self.user_image_label.setPixmap(pixmap)
+        else:
+            # Si no hay imagen, puedes mostrar una imagen por defecto
+            default_image_path = "./data/userImage/default_user.png"
+            if os.path.exists(default_image_path):
+                pixmap = QPixmap(default_image_path)
+                self.user_image_label.setPixmap(pixmap)
+            else:
+                print("No se encontró la imagen del usuario ni la imagen por defecto.")
+
 
     def hash_password(self, password):
         """Hash the password using SHA-256 (or another secure method)."""
@@ -336,10 +358,10 @@ class PasswordRecoveryWindow(QWidget):
 class PasswordRecoveryWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.parent_widget = parent  # Referencia al LoginWindow o cualquier ventana principal
+        self.parent_widget = parent  # Referencia a la ventana principal (LoginWindow u otra)
 
         self.setWindowTitle("Password Recovery")
-        self.setGeometry(400, 200, 400, 200)
+        self.setGeometry(400, 200, 400, 250)
 
         layout = QVBoxLayout(self)
 
@@ -357,6 +379,10 @@ class PasswordRecoveryWindow(QWidget):
         self.user_selection_combo = QComboBox()
         self.update_user_selection_combo()
         form_layout.addRow(QLabel("Select User:"), self.user_selection_combo)
+
+        # Entrada para el ID del usuario
+        self.user_id_input = QLineEdit()
+        form_layout.addRow(QLabel("Enter User ID:"), self.user_id_input)
 
         # Entrada para nueva contraseña
         self.new_password_input = QLineEdit()
@@ -390,10 +416,15 @@ class PasswordRecoveryWindow(QWidget):
     def handle_reset_password(self):
         """Lógica para restablecer la contraseña de un usuario existente."""
         selected_user = self.user_selection_combo.currentText()
+        entered_user_id = self.user_id_input.text().strip()  # El ID ingresado por el usuario
         new_password = self.new_password_input.text().strip()
 
         if not selected_user:
             QMessageBox.warning(self, "Error", "Please select a user to reset the password.")
+            return
+
+        if not entered_user_id:
+            QMessageBox.warning(self, "Error", "Please enter the user ID.")
             return
 
         if not new_password:
@@ -401,7 +432,7 @@ class PasswordRecoveryWindow(QWidget):
             return
 
         # Cargar base de datos de usuarios
-        user_database = load_user_database()
+        user_database, _ = load_user_database()
 
         if not user_database:
             QMessageBox.warning(self, "Error", "User database could not be loaded.")
@@ -410,6 +441,13 @@ class PasswordRecoveryWindow(QWidget):
         if selected_user in user_database:
             # Verificar si el usuario tiene una estructura válida (debe ser un diccionario)
             if isinstance(user_database[selected_user], dict):
+                stored_user_id = user_database[selected_user].get("id")  # Obtener el ID del usuario
+
+                if stored_user_id != entered_user_id:
+                    QMessageBox.warning(self, "Error", "The entered user ID is incorrect.")
+                    return
+
+                # Si el ID es correcto, procedemos con el cambio de contraseña
                 hashed_password = self.hash_password(new_password)
                 user_database[selected_user]["password"] = hashed_password
                 save_user_database(user_database)
@@ -423,7 +461,7 @@ class PasswordRecoveryWindow(QWidget):
     def update_user_selection_combo(self):
         """Actualiza el ComboBox con los usuarios existentes de la base de datos."""
         self.user_selection_combo.clear()  # Limpiamos el combo box
-        user_database = load_user_database()
+        user_database, _ = load_user_database()  # Cargar base de datos de usuarios
 
         if user_database:
             for username in user_database.keys():
@@ -434,8 +472,7 @@ class PasswordRecoveryWindow(QWidget):
     def hash_password(self, password):
         """Hash the password using SHA-256 (or another secure method)."""
         return hashlib.sha256(password.encode()).hexdigest()
-
-
+    
 class UserChangeWindow(QWidget):
     user_changed = pyqtSignal(str)
 
@@ -497,10 +534,12 @@ class UserChangeWindow(QWidget):
 
     def create_user_form_layout(self):
         form_layout = QFormLayout()
+        self.unique_id_input = QLineEdit()
         self.username_input = QLineEdit()
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
 
+        form_layout.addRow("Unique_id:", self.unique_id_input)
         form_layout.addRow("Username:", self.username_input)
         form_layout.addRow("Password:", self.password_input)
 
@@ -525,6 +564,7 @@ class UserChangeWindow(QWidget):
         self.select_user_container.setVisible(True)
 
     def handle_create_user(self):
+        id = self.username_input.text()
         username = self.username_input.text()
         password = self.password_input.text()
 

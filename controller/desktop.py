@@ -6,6 +6,7 @@ from controller.taskBar import TaskBar
 from controller.taskManager import TaskManager
 from apps.calculator import Calculator
 from apps.docs import Docs
+from apps.trash import Trash 
 
 class Desktop(QMainWindow):
     def __init__(self):
@@ -30,8 +31,8 @@ class Desktop(QMainWindow):
         desktop_layout.setContentsMargins(20, 20, 20, 20)
         
         # Añadir iconos al escritorio
-        self.add_desktop_icon(desktop_layout, "My Computer", "data/icons/pc.png")
-        self.add_desktop_icon(desktop_layout, "Recycle Bin", "data/icons/trash.png")
+        self.add_desktop_icon(desktop_layout, "User Panel", "data/icons/pc.png")
+        self.add_desktop_icon(desktop_layout, "Recycle Bin", "data/icons/trash.png", self.open_recycle_bin)
         self.add_desktop_icon(desktop_layout, "My Documents", "data/icons/docs.png")
         
         self.desktop_background.setLayout(desktop_layout)  # Establecer el diseño del área del escritorio
@@ -48,11 +49,13 @@ class Desktop(QMainWindow):
         self.task_manager = TaskManager(self)
         self.calculator = Calculator(self)
         self.docs_window = Docs()
+        self.recycle_bin = Trash()  # Crear instancia de la papelera
 
         # Inicialmente, las ventanas están ocultas
         self.task_manager.hide()
         self.calculator.hide()
         self.docs_window.hide()
+        self.recycle_bin.hide()  # Ocultar la papelera inicialmente
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_clock)
@@ -90,15 +93,26 @@ class Desktop(QMainWindow):
             self.docs_window.raise_()  # Asegúrate de que esté en primer plano
         self.task_manager.update_apps_in_use()  # Actualizar la lista de apps abiertas
 
+    def open_recycle_bin(self):
+        """Abrir la papelera de reciclaje."""
+        if not self.recycle_bin.isVisible():
+            self.recycle_bin.show()
+            self.recycle_bin.raise_()  # Llevar la ventana al frente
+
     def update_clock(self):
         """Lógica para actualizar el reloj, si es necesario."""
         # Implementa aquí el código para actualizar el reloj
 
-    def add_desktop_icon(self, layout, name, icon_path):
+    def add_desktop_icon(self, layout, name, icon_path, on_click=None):
+        """Añade un icono al escritorio."""
         icon_button = QPushButton()
         icon_button.setIcon(QIcon(icon_path))
         icon_button.setIconSize(QSize(64, 64))
         icon_button.setText(name)
         icon_button.setStyleSheet("text-align: left; padding: 10px; border: none;")
+        
+        # Conectar la señal de clic al método correspondiente
+        if on_click:
+            icon_button.clicked.connect(on_click)
+        
         layout.addWidget(icon_button)
-
