@@ -1,5 +1,4 @@
 import sys 
-import os
 from PySide6.QtWidgets import QApplication
 from controller.login import LoginWindow
 

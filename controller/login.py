@@ -3,66 +3,64 @@ import json
 import hashlib
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QFormLayout, QMessageBox, QComboBox
 from PySide6.QtGui import QPixmap, QPalette, QBrush, QImage, QPainter, QPainterPath
-from PySide6.QtCore import Qt, QSize, QTimer, QTime
+from PySide6.QtCore import Qt, QSize, QTimer, QTime, Signal as pyqtSignal
 from controller.desktop import Desktop
 from controller.dataBase import load_user_database, save_user_database
+
 class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Login")
-        self.setGeometry(100, 100, 1420, 800)  # Establecer el tamaño de la ventana
+        self.setGeometry(100, 100, 1420, 800)
 
-        # Cargar la base de datos de usuarios desde un archivo JSON
-        self.user_database = self.load_user_database("data/dataBaseUser/user.json")
-
-        # Obtener la ruta absoluta de la imagen de fondo
-        path_to_background = os.path.abspath("data/background.jpg")
+        # Cargar la base de datos de usuarios
+        self.user_database = self.load_user_database("data/dataBaseUser/users.json")
+        
+        # Inicializamos el usuario actual con el primer usuario en la base de datos o un valor por defecto
+        if self.user_database:
+            self.current_username = list(self.user_database.keys())[0]  # Primer usuario en la base de datos
+        else:
+            self.current_username = "Guest"  # Usuario por defecto si no hay usuarios
 
         # Verificar si la imagen de fondo existe
+        path_to_background = os.path.abspath("data/background.jpg")
         if not os.path.exists(path_to_background):
             print(f"Error: Background image not found at: {path_to_background}")
         else:
             # Cargar la imagen de fondo
             background = QImage(path_to_background)
-
-            # Crear una paleta y establecer la imagen de fondo
             palette = QPalette()
             palette.setBrush(QPalette.Window, QBrush(background.scaled(
-                QSize(self.width(), self.height()),  # Escalar la imagen al tamaño de la ventana
-                Qt.AspectRatioMode.KeepAspectRatioByExpanding,  # Mantener la relación de aspecto
-                Qt.TransformationMode.SmoothTransformation  # Usar escalado suave
+                QSize(self.width(), self.height()),
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.TransformationMode.SmoothTransformation
             )))
-            self.setPalette(palette)  # Aplicar la paleta a la ventana
+            self.setPalette(palette)
 
-        # Crear el diseño principal (horizontal)
         main_layout = QHBoxLayout(self)
-
-        # Añadir espacio de estiramiento a la izquierda para empujar elementos a la derecha
         main_layout.addStretch(1)
 
-        # Crear un contenedor para los elementos del lado derecho
         right_container = QWidget()
         right_layout = QVBoxLayout(right_container)
-        right_layout.setContentsMargins(15, 15, 15, 15)  # Añadir márgenes al diseño
+        right_layout.setContentsMargins(15, 15, 15, 15)
 
         # Crear la imagen del perfil de usuario
         self.user_image_label = QLabel()
         user_image_path = os.path.abspath("data/user_image.jpeg")
         if os.path.exists(user_image_path):
-            # Cargar y escalar la imagen de perfil del usuario
             self.user_image_pixmap = QPixmap(user_image_path)
-            rounded_pixmap = self.get_round_pixmap(self.user_image_pixmap, 400)  # Tamaño 400x400
+            rounded_pixmap = self.get_round_pixmap(self.user_image_pixmap, 400)
             self.user_image_label.setPixmap(rounded_pixmap)
         else:
             print(f"Error: User image not found at: {user_image_path}")
 
-        self.user_image_label.setAlignment(Qt.AlignCenter)  # Centrar la imagen
+        self.user_image_label.setAlignment(Qt.AlignCenter)
         right_layout.addWidget(self.user_image_label)
 
-        # Crear un QPushButton para el nombre de usuario
-        username_button = QPushButton("Isabella")
-        username_button.setStyleSheet("""
+        # Botón para mostrar el nombre de usuario actual
+        self.username_button = QPushButton(self.current_username)
+        self.username_button.setStyleSheet("""
         QPushButton {
             background-color: rgb(183, 132, 183);
             color: white;
@@ -72,21 +70,13 @@ class LoginWindow(QWidget):
             padding: 5px;
         }
         """)
-        username_button.setFlat(True)  # Hacer que el botón sea plano para que parezca más un etiqueta
-
-        # Añadir el botón de nombre de usuario al diseño derecho
-        right_layout.addWidget(username_button)
-
-        # Crear un formulario para ingresar la contraseña
-        form_layout = QFormLayout()
-        form_layout.setLabelAlignment(Qt.AlignRight)  # Alinear etiquetas a la derecha
-        form_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)  # Permitir que los campos crezcan
+        self.username_button.setFlat(True)
+        right_layout.addWidget(self.username_button)
 
         # Campo de entrada para la contraseña
+        form_layout = QFormLayout()
         self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit.Password)  # Establecer campo de contraseña para ocultar texto
-
-        # Estilo para entradas QLineEdit
+        self.password_input.setEchoMode(QLineEdit.Password)
         input_style = """
         QLineEdit {
             background-color: rgba(255, 255, 255, 200);
@@ -97,18 +87,11 @@ class LoginWindow(QWidget):
         }
         """
         self.password_input.setStyleSheet(input_style)
-
-        # Estilo para etiquetas
-        label_style = "color: white; font-weight: bold;"
         password_label = QLabel("Password:")
-        password_label.setStyleSheet(label_style)
-
-        # Añadir campo de contraseña al diseño del formulario
+        password_label.setStyleSheet("color: white; font-weight: bold;")
         form_layout.addRow(password_label, self.password_input)
+        right_layout.addLayout(form_layout)
 
-        right_layout.addLayout(form_layout)  # Añadir el diseño del formulario al diseño derecho
-
-        # Crear botones con estilos
         button_style = """
         QPushButton {
             background-color: rgb(140, 48, 97);
@@ -123,58 +106,46 @@ class LoginWindow(QWidget):
         }
         """
 
-        # Crear botones para Cambiar Usuario, Iniciar Sesión y Olvidé la Contraseña
+        # Botones para cambiar usuario e iniciar sesión
         self.change_user_button = QPushButton("Change User")
         self.login_button = QPushButton("Login")
-        self.forgot_password_button = QPushButton("Forgot Password")  # Nuevo botón
+        self.forgot_password_button = QPushButton("Forgot Password")
 
-        # Aplicar estilos a los botones
         self.change_user_button.setStyleSheet(button_style)
         self.login_button.setStyleSheet(button_style)
-        self.forgot_password_button.setStyleSheet(button_style)  # Estilo para olvidar la contraseña
+        self.forgot_password_button.setStyleSheet(button_style)
 
-        # Conectar clics de botones a los manejadores correspondientes
-        self.change_user_button.clicked.connect(self.open_user_change_window)  # Conectar para cambiar de usuario
-        self.login_button.clicked.connect(self.handle_login)  # Conectar el botón de inicio de sesión al manejador
-        self.forgot_password_button.clicked.connect(self.open_password_recovery)  # Conectar al manejador de recuperación
+        self.change_user_button.clicked.connect(self.open_user_change_window)
+        self.login_button.clicked.connect(self.handle_login)
+        self.forgot_password_button.clicked.connect(self.open_password_recovery)
 
-        # Añadir botones al diseño derecho
         right_layout.addWidget(self.change_user_button)
         right_layout.addWidget(self.login_button)
-        right_layout.addWidget(self.forgot_password_button)  # Añadir al diseño
+        right_layout.addWidget(self.forgot_password_button)
 
-        # Añadir el contenedor derecho (con todos los elementos) al diseño principal
         main_layout.addWidget(right_container)
 
-        # Crear la etiqueta del reloj
+        # Reloj
         self.clock_label = QLabel()
         self.update_clock()
-        self.clock_label.setStyleSheet("color: white; font-size: 14pt; font-weight: bold;")  # Estilo del reloj
-
-        # Añadir etiqueta de reloj a la parte superior derecha de la ventana
+        self.clock_label.setStyleSheet("color: white; font-size: 14pt; font-weight: bold;")
         top_layout = QVBoxLayout()
         top_layout.addWidget(self.clock_label, alignment=Qt.AlignTop | Qt.AlignRight)
         main_layout.addLayout(top_layout)
 
-        # Temporizador para actualizar el reloj cada segundo
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_clock)
-        self.timer.start(1000)  # Actualizar cada segundo
-
-        # Asegurarse de que el widget actualice el fondo al cambiar el tamaño de la ventana
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.timer.start(1000)
 
     def load_user_database(self, file_path):
-        """Cargar la base de datos de usuarios desde un archivo JSON."""
         try:
             with open(file_path, 'r') as file:
-                return json.load(file)  # Cargar la base de datos desde el archivo
+                return json.load(file)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Error loading user database: {e}")
             return {}
 
     def get_round_pixmap(self, pixmap, size):
-        """Crea un pixmap redondeado."""
         rounded_pixmap = QPixmap(size, size)
         rounded_pixmap.fill(Qt.transparent)
         painter = QPainter(rounded_pixmap)
@@ -187,165 +158,113 @@ class LoginWindow(QWidget):
         return rounded_pixmap
 
     def hash_password(self, password):
-        """Cifra la contraseña usando SHA-256."""
         return hashlib.sha256(password.encode()).hexdigest()
 
     def handle_login(self):
         """Maneja la lógica del inicio de sesión."""
-        username = "Isabella"  # Aquí deberías obtener el nombre de usuario de un campo de entrada si lo necesitas
-        password = self.password_input.text()
+        user_database, _ = self.load_user_database()
 
-        hashed_password = self.hash_password(password)  # Cifrar la contraseña ingresada
+        username = self.current_username  # El usuario actual seleccionado
+        password = self.password_input.text()  # Contraseña ingresada
 
-        if username in self.user_database and self.user_database[username] == hashed_password:
-            # Iniciar sesión exitosamente
-            print("Login successful!")
-            self.open_desktop()  # Aquí se debe abrir la ventana de escritorio
+        # Verificar si el nombre de usuario existe en la base de datos
+        if username in user_database:
+            hashed_password = user_database[username]['password']  # Hash de la contraseña almacenada
+            user_role = user_database[username].get('role', 'user')  # Obtener el rol, por defecto 'user'
+
+            # Verificar la contraseña
+            if self.hash_password(password) == hashed_password:
+                # Mostrar mensaje de éxito
+                QMessageBox.information(self, "Success", f"Welcome, {username}! Role: {user_role}")
+                
+                # Personalizar según el rol
+                if user_role == "admin":
+                    self.show_admin_controls()  # Método para mostrar controles de administrador
+                else:
+                    self.show_user_controls()  # Método para mostrar controles de usuario normal
+                
+                # Abrir la ventana del escritorio (según el rol)
+                self.open_desktop()
+            else:
+                QMessageBox.warning(self, "Error", "Incorrect password.")
         else:
-            QMessageBox.warning(self, "Login Failed", "Incorrect username or password!")
+            QMessageBox.warning(self, "Error", "Username does not exist.")
+            
+    def show_admin_controls(self):
+        """Muestra controles adicionales si el usuario es administrador."""
+        # Por ejemplo, habilitar botones o funcionalidades para administrar el sistema
+        self.admin_button = QPushButton("Admin Settings")
+        self.admin_button.setStyleSheet(self.get_button_style())
+        self.admin_button.clicked.connect(self.open_admin_panel)  # Conectar a una función que abra el panel de admin
+        self.right_layout.addWidget(self.admin_button)
+
+    def show_user_controls(self):
+        """Muestra la interfaz normal para usuarios."""
+        # Aquí se pueden agregar funcionalidades específicas solo para usuarios
+        pass
+            
 
     def open_password_recovery(self):
-        """Abre la ventana de recuperación de contraseña."""
         self.password_recovery_window = PasswordRecoveryWindow()
         self.password_recovery_window.show()
 
     def open_user_change_window(self):
-        """Abre la ventana para cambiar o crear un nuevo usuario."""
         self.user_change_window = UserChangeWindow()
+        self.user_change_window.user_changed.connect(self.update_current_user)
         self.user_change_window.show()
 
+    def update_current_user(self, username):
+        self.current_username = username
+        self.username_button.setText(username)
+        self.password_input.clear()
+        self.load_user_image(username)
+        QMessageBox.information(self, "User Changed", f"Current user changed to: {username}")
+
     def open_desktop(self):
-        """Abre la ventana de escritorio."""
-        self.desktop_window = Desktop()  # Asegúrate de que Desktop esté importado
+        self.desktop_window = Desktop()
         self.desktop_window.show()
-        self.close()  # Cerrar la ventana de inicio de sesión
+        self.close()
 
     def update_clock(self):
-        """Actualizar la etiqueta del reloj."""
         current_time = QTime.currentTime()
-        self.clock_label.setText(current_time.toString("hh:mm:ss"))  # Formato de 24 horas
+        self.clock_label.setText(current_time.toString("hh:mm:ss"))
+
 
 class PasswordRecoveryWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.parent_widget = parent  # Referencia al LoginWindow o cualquier ventana principal
+
         self.setWindowTitle("Password Recovery")
-        self.setGeometry(400, 200, 300, 200)
+        self.setGeometry(400, 200, 400, 200)
 
         layout = QVBoxLayout(self)
 
-        # Username
-        self.username_input = QLineEdit()
-        layout.addWidget(QLabel("Username:"))
-        layout.addWidget(self.username_input)
-
-        # New Password
-        self.new_password_input = QLineEdit()
-        self.new_password_input.setEchoMode(QLineEdit.Password)
-        layout.addWidget(QLabel("New Password:"))
-        layout.addWidget(self.new_password_input)
-
-        # Confirm New Password
-        self.confirm_password_input = QLineEdit()
-        self.confirm_password_input.setEchoMode(QLineEdit.Password)
-        layout.addWidget(QLabel("Confirm New Password:"))
-        layout.addWidget(self.confirm_password_input)
-
-        # Recover Button
-        self.recover_button = QPushButton("Recover Password")
-        self.recover_button.clicked.connect(self.handle_recovery)
-        layout.addWidget(self.recover_button)
-
-    def handle_recovery(self):
-        username = self.username_input.text()
-        new_password = self.new_password_input.text()
-        confirm_password = self.confirm_password_input.text()
-
-        if username in self.parent().user_database:
-            if new_password == confirm_password:
-                self.parent().user_database[username] = self.parent().hash_password(new_password)
-                QMessageBox.information(self, "Success", "Password has been successfully changed.")
-                self.close()
-            else:
-                QMessageBox.warning(self, "Error", "Passwords do not match.")
-        else:
-            QMessageBox.warning(self, "Error", "Username not found.")
-
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QComboBox, QFormLayout, QLabel, QLineEdit, QMessageBox
-from PySide6.QtCore import Qt
-
-class UserChangeWindow(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.parent_widget = parent  # Guardamos la referencia al LoginWindow
-
-        self.setWindowTitle("Change User")
-        self.setGeometry(400, 200, 400, 300)
-
-        layout = QVBoxLayout(self)
-
-        # Botón para crear usuario
-        self.create_user_button = QPushButton("Create User")
-        self.create_user_button.setStyleSheet(self.get_button_style())
-        self.create_user_button.clicked.connect(self.show_create_user_fields)
-        layout.addWidget(self.create_user_button)
-
-        # Botón para seleccionar usuario existente
-        self.select_user_button = QPushButton("Select Existing User")
-        self.select_user_button.setStyleSheet(self.get_button_style())
-        self.select_user_button.clicked.connect(self.show_select_user)
-        layout.addWidget(self.select_user_button)
-
-        layout.setAlignment(Qt.AlignCenter)
-
-        # Formulario para nuevo usuario (inicialmente oculto)
-        self.create_user_form_container = QWidget()
-        self.create_user_form = self.create_user_form_layout()
-        self.create_user_form_container.setLayout(self.create_user_form)
-        layout.addWidget(self.create_user_form_container)
-        self.create_user_form_container.setVisible(False)
-
-        # Contenedor para selección de usuario existente (inicialmente oculto)
-        self.select_user_container = QWidget()
-        self.select_user_layout = QVBoxLayout(self.select_user_container)
-
-        # ComboBox para usuarios existentes
-        self.user_selection_combo = QComboBox()
-        self.update_user_selection_combo()
-        self.select_user_layout.addWidget(self.user_selection_combo)
-
-        # Botón para confirmar selección de usuario
-        self.confirm_user_button = QPushButton("Confirm Selection")
-        self.confirm_user_button.setStyleSheet(self.get_button_style())
-        self.confirm_user_button.clicked.connect(self.handle_select_user)
-        self.select_user_layout.addWidget(self.confirm_user_button)
-
-        layout.addWidget(self.select_user_container)
-        self.select_user_container.setVisible(False)
+        # Formulario para restablecer la contraseña
+        self.reset_password_form = self.create_reset_password_form()
+        layout.addLayout(self.reset_password_form)
 
         self.setLayout(layout)
 
-    def create_user_form_layout(self):
-        """Crea el layout para el formulario de nuevo usuario."""
+    def create_reset_password_form(self):
+        """Crea el layout para el formulario de restablecimiento de contraseña."""
         form_layout = QFormLayout()
-        
-        # Entrada para ID único
-        self.unique_id_input = QLineEdit()
-        form_layout.addRow(QLabel("Unique ID:"), self.unique_id_input)
 
-        # Entrada para nombre de usuario
-        self.username_input = QLineEdit()
-        form_layout.addRow(QLabel("Username:"), self.username_input)
+        # ComboBox para seleccionar usuario
+        self.user_selection_combo = QComboBox()
+        self.update_user_selection_combo()
+        form_layout.addRow(QLabel("Select User:"), self.user_selection_combo)
 
-        # Entrada para contraseña
-        self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit.Password)
-        form_layout.addRow(QLabel("Password:"), self.password_input)
+        # Entrada para nueva contraseña
+        self.new_password_input = QLineEdit()
+        self.new_password_input.setEchoMode(QLineEdit.Password)
+        form_layout.addRow(QLabel("New Password:"), self.new_password_input)
 
-        # Botón para crear usuario
-        self.submit_button = QPushButton("Submit")
-        self.submit_button.setStyleSheet(self.get_button_style())
-        self.submit_button.clicked.connect(self.handle_create_user)
-        form_layout.addRow(self.submit_button)
+        # Botón para restablecer la contraseña
+        self.reset_password_button = QPushButton("Reset Password")
+        self.reset_password_button.setStyleSheet(self.get_button_style())
+        self.reset_password_button.clicked.connect(self.handle_reset_password)
+        form_layout.addRow(self.reset_password_button)
 
         return form_layout
 
@@ -365,63 +284,289 @@ class UserChangeWindow(QWidget):
         }
         """
 
-    def show_create_user_fields(self):
-        """Muestra los campos para crear un nuevo usuario."""
-        self.create_user_form_container.setVisible(True)
-        self.select_user_container.setVisible(False)
-
-    def show_select_user(self):
-        """Muestra las opciones para seleccionar un usuario existente."""
-        self.create_user_form_container.setVisible(False)
-        self.select_user_container.setVisible(True)
-
-    def handle_create_user(self):
-        """Lógica para crear un nuevo usuario."""
-        unique_id = self.unique_id_input.text()
-        username = self.username_input.text()
-        password = self.password_input.text()
-
-        if unique_id and username and password:
-            user_database = load_user_database()
-
-            # Añadir nuevo usuario
-            if username not in user_database:
-                hashed_password = self.parent_widget.hash_password(password)
-                user_database[username] = {
-                    "id": unique_id,
-                    "password": hashed_password
-                }
-                save_user_database(user_database)  # Guardamos la base de datos actualizada
-                QMessageBox.information(self, "Success", f"User '{username}' has been created.")
-                self.update_user_selection_combo()  # Actualizamos el combo box
-                self.close()  # Cerramos la ventana después de crear el usuario
-            else:
-                QMessageBox.warning(self, "Error", "Username already exists.")
-        else:
-            QMessageBox.warning(self, "Error", "Please fill in all fields.")
-
-    def handle_select_user(self):
-        """Lógica para seleccionar un usuario existente."""
+    def handle_reset_password(self):
+        """Lógica para restablecer la contraseña de un usuario existente."""
         selected_user = self.user_selection_combo.currentText()
+        new_password = self.new_password_input.text().strip()
 
-        # Verificar que el usuario existe en la base de datos
+        if not selected_user:
+            QMessageBox.warning(self, "Error", "Please select a user to reset the password.")
+            return
+
+        if not new_password:
+            QMessageBox.warning(self, "Error", "Please enter a new password.")
+            return
+
+        # Cargar base de datos de usuarios
         user_database = load_user_database()
 
+        if not user_database:
+            QMessageBox.warning(self, "Error", "User database could not be loaded.")
+            return
+
         if selected_user in user_database:
-            QMessageBox.information(self, "Success", f"User '{selected_user}' selected.")
-            self.parent_widget.update_username_button(selected_user)  # Actualizamos el nombre de usuario en el login
-            self.close()
+            # Verificar si el usuario tiene una estructura válida (debe ser un diccionario)
+            if isinstance(user_database[selected_user], dict):
+                hashed_password = self.hash_password(new_password)
+                user_database[selected_user]["password"] = hashed_password
+                save_user_database(user_database)
+                QMessageBox.information(self, "Success", f"Password for '{selected_user}' has been reset.")
+                self.close()
+            else:
+                QMessageBox.warning(self, "Error", f"User '{selected_user}' data is corrupted.")
         else:
             QMessageBox.warning(self, "Error", "User not found.")
 
     def update_user_selection_combo(self):
         """Actualiza el ComboBox con los usuarios existentes de la base de datos."""
         self.user_selection_combo.clear()  # Limpiamos el combo box
-
-        # Cargar la base de datos de usuarios
         user_database = load_user_database()
 
         if user_database:
-            self.user_selection_combo.addItems(user_database.keys())  # Añadimos los usuarios
+            for username in user_database.keys():
+                self.user_selection_combo.addItem(username)
         else:
             QMessageBox.warning(self, "Error", "No users found in the database.")
+
+    def hash_password(self, password):
+        """Hash the password using SHA-256 (or another secure method)."""
+        return hashlib.sha256(password.encode()).hexdigest()
+    
+    
+class PasswordRecoveryWindow(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent_widget = parent  # Referencia al LoginWindow o cualquier ventana principal
+
+        self.setWindowTitle("Password Recovery")
+        self.setGeometry(400, 200, 400, 200)
+
+        layout = QVBoxLayout(self)
+
+        # Formulario para restablecer la contraseña
+        self.reset_password_form = self.create_reset_password_form()
+        layout.addLayout(self.reset_password_form)
+
+        self.setLayout(layout)
+
+    def create_reset_password_form(self):
+        """Crea el layout para el formulario de restablecimiento de contraseña."""
+        form_layout = QFormLayout()
+
+        # ComboBox para seleccionar usuario
+        self.user_selection_combo = QComboBox()
+        self.update_user_selection_combo()
+        form_layout.addRow(QLabel("Select User:"), self.user_selection_combo)
+
+        # Entrada para nueva contraseña
+        self.new_password_input = QLineEdit()
+        self.new_password_input.setEchoMode(QLineEdit.Password)
+        form_layout.addRow(QLabel("New Password:"), self.new_password_input)
+
+        # Botón para restablecer la contraseña
+        self.reset_password_button = QPushButton("Reset Password")
+        self.reset_password_button.setStyleSheet(self.get_button_style())
+        self.reset_password_button.clicked.connect(self.handle_reset_password)
+        form_layout.addRow(self.reset_password_button)
+
+        return form_layout
+
+    def get_button_style(self):
+        """Define el estilo de los botones."""
+        return """
+        QPushButton {
+            background-color: rgb(140, 48, 97);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        QPushButton:hover {
+            background-color: rgb(82, 34, 88);
+        }
+        """
+
+    def handle_reset_password(self):
+        """Lógica para restablecer la contraseña de un usuario existente."""
+        selected_user = self.user_selection_combo.currentText()
+        new_password = self.new_password_input.text().strip()
+
+        if not selected_user:
+            QMessageBox.warning(self, "Error", "Please select a user to reset the password.")
+            return
+
+        if not new_password:
+            QMessageBox.warning(self, "Error", "Please enter a new password.")
+            return
+
+        # Cargar base de datos de usuarios
+        user_database = load_user_database()
+
+        if not user_database:
+            QMessageBox.warning(self, "Error", "User database could not be loaded.")
+            return
+
+        if selected_user in user_database:
+            # Verificar si el usuario tiene una estructura válida (debe ser un diccionario)
+            if isinstance(user_database[selected_user], dict):
+                hashed_password = self.hash_password(new_password)
+                user_database[selected_user]["password"] = hashed_password
+                save_user_database(user_database)
+                QMessageBox.information(self, "Success", f"Password for '{selected_user}' has been reset.")
+                self.close()
+            else:
+                QMessageBox.warning(self, "Error", f"User '{selected_user}' data is corrupted.")
+        else:
+            QMessageBox.warning(self, "Error", "User not found.")
+
+    def update_user_selection_combo(self):
+        """Actualiza el ComboBox con los usuarios existentes de la base de datos."""
+        self.user_selection_combo.clear()  # Limpiamos el combo box
+        user_database = load_user_database()
+
+        if user_database:
+            for username in user_database.keys():
+                self.user_selection_combo.addItem(username)
+        else:
+            QMessageBox.warning(self, "Error", "No users found in the database.")
+
+    def hash_password(self, password):
+        """Hash the password using SHA-256 (or another secure method)."""
+        return hashlib.sha256(password.encode()).hexdigest()
+
+
+class UserChangeWindow(QWidget):
+    user_changed = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Change User")
+        self.setGeometry(400, 200, 400, 300)
+
+        layout = QVBoxLayout(self)
+
+        self.create_user_button = QPushButton("Create User")
+        self.create_user_button.setStyleSheet(self.get_button_style())
+        self.create_user_button.clicked.connect(self.show_create_user_fields)
+        layout.addWidget(self.create_user_button)
+
+        self.select_user_button = QPushButton("Select Existing User")
+        self.select_user_button.setStyleSheet(self.get_button_style())
+        self.select_user_button.clicked.connect(self.show_select_user)
+        layout.addWidget(self.select_user_button)
+
+        layout.setAlignment(Qt.AlignCenter)
+
+        self.create_user_form_container = QWidget()
+        self.create_user_form = self.create_user_form_layout()
+        self.create_user_form_container.setLayout(self.create_user_form)
+        layout.addWidget(self.create_user_form_container)
+        self.create_user_form_container.setVisible(False)
+
+        self.select_user_container = QWidget()
+        self.select_user_layout = QVBoxLayout(self.select_user_container)
+        self.user_selection_combo = QComboBox()
+        self.update_user_selection_combo()
+        self.select_user_layout.addWidget(self.user_selection_combo)
+
+        self.confirm_user_button = QPushButton("Confirm Selection")
+        self.confirm_user_button.setStyleSheet(self.get_button_style())
+        self.confirm_user_button.clicked.connect(self.handle_select_user)
+        self.select_user_layout.addWidget(self.confirm_user_button)
+        layout.addWidget(self.select_user_container)
+        self.select_user_container.setVisible(False)
+
+        self.setLayout(layout)
+
+    def get_button_style(self):
+        return """
+        QPushButton {
+            background-color: rgb(140, 48, 97);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        QPushButton:hover {
+            background-color: rgb(82, 34, 88);
+        }
+        """
+
+    def create_user_form_layout(self):
+        form_layout = QFormLayout()
+        self.username_input = QLineEdit()
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.Password)
+
+        form_layout.addRow("Username:", self.username_input)
+        form_layout.addRow("Password:", self.password_input)
+
+        self.confirm_create_user_button = QPushButton("Create User")
+        self.confirm_create_user_button.setStyleSheet(self.get_button_style())
+        self.confirm_create_user_button.clicked.connect(self.handle_create_user)
+        form_layout.addWidget(self.confirm_create_user_button)
+
+        return form_layout
+
+    def update_user_selection_combo(self):
+        user_database, _ = self.load_user_database()
+        self.user_selection_combo.clear()
+        self.user_selection_combo.addItems(user_database.keys())
+
+    def show_create_user_fields(self):
+        self.create_user_form_container.setVisible(True)
+        self.select_user_container.setVisible(False)
+
+    def show_select_user(self):
+        self.create_user_form_container.setVisible(False)
+        self.select_user_container.setVisible(True)
+
+    def handle_create_user(self):
+        username = self.username_input.text()
+        password = self.password_input.text()
+
+        if not username or not password:
+            QMessageBox.warning(self, "Error", "Both username and password are required.")
+            return
+
+        user_database, first_user = self.load_user_database()
+        if username in user_database:
+            QMessageBox.warning(self, "Error", "User already exists.")
+        else:
+            hashed_password = self.hash_password(password)
+            user_database[username] = {"password": hashed_password}
+            self.save_user_database(user_database)
+            QMessageBox.information(self, "Success", f"User '{username}' created successfully.")
+            self.user_changed.emit(username)
+            self.close()
+
+    def handle_select_user(self):
+        selected_user = self.user_selection_combo.currentText()
+        user_database, _ = self.load_user_database()
+
+        if selected_user in user_database:
+            QMessageBox.information(self, "Success", f"User '{selected_user}' selected.")
+            self.user_changed.emit(selected_user)
+            self.close()
+        else:
+            QMessageBox.warning(self, "Error", "User not found.")
+
+    def load_user_database(self):
+        try:
+            with open("data/dataBaseUser/users.json", "r") as file:
+                return json.load(file), None
+        except FileNotFoundError:
+            return {}, None
+
+    def save_user_database(self, user_database):
+        try:
+            with open("data/dataBaseUser/users.json", "w") as file:
+                json.dump(user_database, file)
+        except Exception as e:
+            print(f"Error saving user database: {e}")
+
+    def hash_password(self, password):
+        return hashlib.sha256(password.encode()).hexdigest()
