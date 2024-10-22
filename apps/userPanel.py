@@ -1,6 +1,6 @@
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox
-from PySide6.QtGui import QPixmap
-from apps.adminPanel import AdminPanel
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QMessageBox
+from PySide6.QtGui import QPixmap, QPainter, QPainterPath
+from PySide6.QtCore import Qt
 import os
 
 class UserPanel(QWidget):
@@ -72,7 +72,6 @@ class UserPanel(QWidget):
             self.user_image_label.setPixmap(rounded_pixmap)
             self.user_image_label.setFixedSize(150, 150)
         else:
-            # Si la imagen no existe, mostrar una imagen por defecto
             print(f"Imagen no encontrada en la ruta: {self.image_path}")
     
     def add_admin_controls(self):
@@ -93,6 +92,7 @@ class UserPanel(QWidget):
     
     def open_admin_panel(self):
         """Abrir el panel de administración."""
+        from apps.adminPanel import AdminPanel
         self.admin_window = AdminPanel(self)
         self.admin_window.show()
     
@@ -107,6 +107,15 @@ class UserPanel(QWidget):
     
     def get_round_pixmap(self, pixmap, size):
         """Devuelve una imagen redondeada (PixMap) para mostrar como perfil."""
-        # Aquí puedes usar la misma lógica que ya implementamos para redondear imágenes
-        # Devolver la imagen redondeada
-        return pixmap.scaled(size, size)
+        rounded_pixmap = QPixmap(size, size)
+        rounded_pixmap.fill(Qt.transparent)  # Hacer el fondo transparente
+
+        painter = QPainter(rounded_pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.addEllipse(0, 0, size, size)
+        painter.setClipPath(path)
+        painter.drawPixmap(0, 0, pixmap.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        painter.end()
+
+        return rounded_pixmap
