@@ -68,9 +68,3 @@ class Calculator(QWidget):
         else:
             self.display.setText(self.display.text() + button)
 
-# Si deseas ejecutar la calculadora como una aplicación independiente, usa el siguiente bloque
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    calculator = Calculator()
-    calculator.show()
-    sys.exit(app.exec())

@@ -49,7 +49,7 @@ class TaskBar(QWidget):
         """Actualizar el estado de la batería si está disponible."""
         battery = psutil.sensors_battery()
         if battery is not None:
-            percent = battery.percent
+            percent = int(battery.percent)  # Convertir a entero para quitar decimales
             plugged = battery.power_plugged
             if plugged:
                 self.battery_label.setText(f"Battery: {percent}% (Charging)")

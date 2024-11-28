@@ -7,9 +7,7 @@ from controller.dataBase import load_user_database, save_user_database
 from PySide6.QtCore import Qt, QSize, QTimer, QTime, Signal as pyqtSignal
 from PySide6.QtGui import QPixmap, QPalette, QBrush, QImage, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QFormLayout, QMessageBox, QComboBox
-import os
-import json
-import hashlib
+
 
 class LoginWindow(QWidget):
     def __init__(self):
@@ -213,7 +211,7 @@ class LoginWindow(QWidget):
     def open_admin_panel(self):
         """Abre el panel de configuración de administrador."""
         self.admin_panel_window = AdminPanel(self)  # Crear una instancia de AdminPanel
-        self.admin_panel_window.show()  # Mostrar el panel de administrad
+        self.admin_panel_window.show()  # Mostrar el panel de administrador
 
     def open_password_recovery(self):
         """Abre la ventana de recuperación de contraseña."""
@@ -238,126 +236,7 @@ class LoginWindow(QWidget):
         """Actualiza el reloj en la interfaz."""
         current_time = QTime.currentTime()
         self.clock_label.setText(current_time.toString("hh:mm:ss"))
-
-
-class PasswordRecoveryWindow(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.parent_widget = parent  # Referencia al LoginWindow o cualquier ventana principal
-
-        self.setWindowTitle("Password Recovery")
-        self.setGeometry(400, 200, 400, 200)
-
-        layout = QVBoxLayout(self)
-
-        # Formulario para restablecer la contraseña
-        self.reset_password_form = self.create_reset_password_form()
-        layout.addLayout(self.reset_password_form)
-
-        self.setLayout(layout)
-
-    def create_reset_password_form(self):
-        """Crea el layout para el formulario de restablecimiento de contraseña."""
-        form_layout = QFormLayout()
-
-        # ComboBox para seleccionar usuario
-        self.user_selection_combo = QComboBox()
-        self.update_user_selection_combo()
-        form_layout.addRow(QLabel("Select User:"), self.user_selection_combo)
-
-        # Entrada para nueva contraseña
-        self.new_password_input = QLineEdit()
-        self.new_password_input.setEchoMode(QLineEdit.Password)
-        form_layout.addRow(QLabel("New Password:"), self.new_password_input)
-
-        # Botón para restablecer la contraseña
-        self.reset_password_button = QPushButton("Reset Password")
-        self.reset_password_button.setStyleSheet(self.get_button_style())
-        self.reset_password_button.clicked.connect(self.handle_reset_password)
-        form_layout.addRow(self.reset_password_button)
-
-        return form_layout
-
-    def get_button_style(self):
-        """Define el estilo de los botones."""
-        return """
-        QPushButton {
-            background-color: rgb(140, 48, 97);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        QPushButton:hover {
-            background-color: rgb(82, 34, 88);
-        }
-        """
-
-    def handle_reset_password(self):
-        """Lógica para restablecer la contraseña de un usuario existente."""
-        selected_user = self.user_selection_combo.currentText()
-        new_password = self.new_password_input.text().strip()
-
-        if not selected_user:
-            QMessageBox.warning(self, "Error", "Please select a user to reset the password.")
-            return
-
-        if not new_password:
-            QMessageBox.warning(self, "Error", "Please enter a new password.")
-            return
-
-        # Cargar base de datos de usuarios
-        user_database = load_user_database()
-
-        if not user_database:
-            QMessageBox.warning(self, "Error", "User database could not be loaded.")
-            return
-
-        if selected_user in user_database:
-            # Verificar si el usuario tiene una estructura válida (debe ser un diccionario)
-            if isinstance(user_database[selected_user], dict):
-                hashed_password = self.hash_password(new_password)
-                user_database[selected_user]["password"] = hashed_password
-                save_user_database(user_database)
-                QMessageBox.information(self, "Success", f"Password for '{selected_user}' has been reset.")
-                self.close()
-            else:
-                QMessageBox.warning(self, "Error", f"User '{selected_user}' data is corrupted.")
-        else:
-            QMessageBox.warning(self, "Error", "User not found.")
-
-    def update_user_selection_combo(self):
-        """Actualiza el ComboBox con los usuarios existentes de la base de datos."""
-        self.user_selection_combo.clear()  # Limpiamos el combo box
-        user_database = load_user_database()
-
-        if user_database:
-            for username in user_database.keys():
-                self.user_selection_combo.addItem(username)
-        else:
-            QMessageBox.warning(self, "Error", "No users found in the database.")
-            
-    def load_user_image(self, username):
-        """Carga la imagen del usuario basado en el nombre de usuario."""
-        image_path = f"./data/useImages/{username}.jpg"  
-        if os.path.exists(image_path):
-            pixmap = QPixmap(image_path)
-            self.user_image_label.setPixmap(pixmap)
-        else:
-            # Si no hay imagen, puedes mostrar una imagen por defecto
-            default_image_path = "./data/userImage/default_user.png"
-            if os.path.exists(default_image_path):
-                pixmap = QPixmap(default_image_path)
-                self.user_image_label.setPixmap(pixmap)
-            else:
-                print("No se encontró la imagen del usuario ni la imagen por defecto.")
-
-
-    def hash_password(self, password):
-        """Hash the password using SHA-256 (or another secure method)."""
-        return hashlib.sha256(password.encode()).hexdigest()
-    
+        
 
 class PasswordRecoveryWindow(QWidget):
     def __init__(self, parent=None):
@@ -443,7 +322,8 @@ class PasswordRecoveryWindow(QWidget):
             return
 
         if selected_user in user_database:
-            stored_user_id = user_database[selected_user].get("id")  # Obtener el ID del usuario
+            stored_user_id = user_database[selected_user].get("id")  
+            stored_user_name = user_database[selected_user].get("name")  
 
             if str(stored_user_id) != entered_user_id:
                 QMessageBox.warning(self, "Error", "The entered user ID is incorrect.")
@@ -452,9 +332,21 @@ class PasswordRecoveryWindow(QWidget):
             # Si el ID es correcto, procedemos con el cambio de contraseña
             hashed_password = self.hash_password(new_password)
             user_database[selected_user]["password"] = hashed_password
-            self.save_user_database(user_database)
-            QMessageBox.information(self, "Success", f"Password for '{selected_user}' has been reset.")
-            self.close()
+
+            # Guardar cambios en la base de datos
+            if self.save_user_database(user_database):
+                QMessageBox.information(self, "Success", f"Password for '{selected_user}' has been reset.")
+                
+                # Aquí llamamos a un método en LoginWindow para actualizar su estado
+                if self.parent_widget and hasattr(self.parent_widget, 'update_user_data'):
+                    self.parent_widget.update_user_data(selected_user, hashed_password)
+                
+                # Actualizar el ComboBox y el estado
+                self.update_user_selection_combo()
+                self.new_password_input.clear()  # Limpiar el campo de nueva contraseña
+                self.user_id_input.clear()  # Limpiar el campo de ID de usuario
+            else:
+                QMessageBox.warning(self, "Error", "Failed to save the updated user database.")
         else:
             QMessageBox.warning(self, "Error", "User not found.")
 
@@ -475,7 +367,8 @@ class PasswordRecoveryWindow(QWidget):
             with open("data/dataBaseUser/users.json", "r") as file:
                 return json.load(file)
         except FileNotFoundError:
-            return {}  # Retornar un diccionario vacío si no se encuentra el archivo
+            QMessageBox.warning(self, "Error", "User database file not found.")
+            return {}
         except json.JSONDecodeError:
             QMessageBox.warning(self, "Error", "User database is corrupted.")
             return {}
@@ -485,8 +378,10 @@ class PasswordRecoveryWindow(QWidget):
         try:
             with open("data/dataBaseUser/users.json", "w") as file:
                 json.dump(user_database, file, indent=4)
+            return True  # Retornar verdadero si se guarda correctamente
         except Exception as e:
             print(f"Error saving user database: {e}")
+            return False  # Retornar falso si hubo un error al guardar
 
     def hash_password(self, password):
         """Hash the password using SHA-256 (or another secure method)."""
@@ -650,3 +545,6 @@ class UserChangeWindow(QWidget):
         """Obtiene el próximo ID de usuario disponible (ya no se usa ya que se permite ID personalizado)."""
         existing_ids = [user["id"] for user in user_database.values()]
         return max(existing_ids, default=0) + 1
+    
+    
+    

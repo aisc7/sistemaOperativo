@@ -135,10 +135,7 @@ class TaskManager(QMainWindow):
         if self.parent.docs_window and self.parent.docs_window.isVisible():
             open_apps.append("Docs")
 
-        # Añadir más aplicaciones si se abren más
-        # Aquí puedes añadir lógica para otras aplicaciones
-
-        # Llenar la tabla con las apps abiertas
+    
         for idx, app_name in enumerate(open_apps):
             self.apps_table.insertRow(idx)
             self.apps_table.setItem(idx, 0, QTableWidgetItem(app_name))

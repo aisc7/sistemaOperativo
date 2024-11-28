@@ -1,18 +1,22 @@
 import os
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
-                               QMessageBox, QInputDialog)
+import subprocess
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,QMessageBox, QInputDialog)
 from PySide6.QtGui import QIcon
+
 
 class Docs(QWidget):
     def __init__(self, user_id, parent=None):
         super().__init__(parent)
         self.user_id = str(user_id)  # Asegúrate de que el ID sea una cadena
-        self.setWindowTitle(f"Documents for User ID: {self.user_id}")
+        self.setWindowTitle(f"My Documents")
         self.setGeometry(200, 200, 600, 400)
 
         # Ruta base para guardar los documentos del usuario
         self.base_docs_path = os.path.join(os.getcwd(), 'data', 'docs', self.user_id)
         os.makedirs(self.base_docs_path, exist_ok=True)  # Crear el directorio del usuario si no existe
+
+        # Crear subcarpetas necesarias
+        self.create_default_folders()
 
         # Inicializa la variable docs_path aquí
         self.docs_path = self.base_docs_path
@@ -23,6 +27,13 @@ class Docs(QWidget):
 
         # Inicializa la interfaz
         self.init_ui()
+
+    def create_default_folders(self):
+        """Crear las carpetas predeterminadas dentro del directorio del usuario."""
+        default_folders = ['Downloads', 'Downloads', 'Desktop', 'Videos', 'My Docs', 'Images']
+        for folder in default_folders:
+            folder_path = os.path.join(self.base_docs_path, folder)
+            os.makedirs(folder_path, exist_ok=True)  # Crear la subcarpeta si no existe
 
     def init_ui(self):
         main_layout = QVBoxLayout(self)
@@ -125,7 +136,7 @@ class Docs(QWidget):
                 self.refresh_file_list()
             else:
                 QMessageBox.warning(self, "Error", f"Folder '{folder_name}' already exists!")
-
+                
     def create_file(self):
         """Crear un archivo con contenido."""
         file_name, ok = QInputDialog.getText(self, 'Create File', 'Enter file name:')
@@ -165,5 +176,10 @@ class Docs(QWidget):
 
     def closeEvent(self, event):
         """Cerrar correctamente la ventana."""
-        self.deleteLater()  # Asegurarse de que la ventana se elimine correctamente
-        event.accept()  # Aceptar el evento de cierre
+        self.deleteLater()  
+    
+    def get_my_docs_folder(self):
+        """Devuelve la ruta de la carpeta 'My Docs'."""
+        my_docs_folder = os.path.join(self.base_docs_path, 'My Docs')
+        print(f"Ruta de 'My Docs': {my_docs_folder}")  # Para depuración
+        return my_docs_folder  

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Map</title>
+    
+    <!-- Estilos CSS -->
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            left: 0;
+        }
+        .leaflet-container {
+            font-size: 1rem;
+        }
+        #map_ed5eaa3176d80880ed785c36f546ac07 {
+            position: relative;
+            width: 100.0%;
+            height: 100.0%;
+        }
+    </style>
+
+    <!-- Librerías CSS externas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+</head>
+<body>
+    <!-- Contenedor del mapa -->
+    <div id="map_ed5eaa3176d80880ed785c36f546ac07" class="folium-map"></div>
+
+    <!-- Scripts JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+
+    <script>
+        // Asegurarse de que Leaflet esté definido
+        if (typeof L === "undefined") {
+            console.error("Leaflet no está definido. Verifica las rutas de los recursos.");
+        } else {
+            // Inicializar el mapa
+            var map = L.map("map_ed5eaa3176d80880ed785c36f546ac07", {
+                center: [5.0703, -75.5138], // Coordenadas de Manizales
+                crs: L.CRS.EPSG3857,
+                zoom: 10,
+                zoomControl: true,
+                preferCanvas: false,
+            });
+
+            // Agregar la capa de OpenWeatherMap (Temperatura)
+            var weatherLayer = L.tileLayer(
+                "https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=b8ba6c5b502f1e5886a05432bca9928e", {
+                    attribution: "OpenWeatherMap",
+                    detectRetina: false,
+                    maxZoom: 18,
+                    minZoom: 0,
+                    noWrap: false,
+                    opacity: 1,
+                    subdomains: "abc",
+                    tms: false
+                }
+            );
+            weatherLayer.addTo(map);
+
+            // Agregar control de capas
+            L.control.layers({}, {
+                "Temperatura": weatherLayer
+            }, {
+                autoZIndex: true,
+                collapsed: true,
+                position: "topright"
+            }).addTo(map);
+        }
+    </script>
+</body>
+</html>
