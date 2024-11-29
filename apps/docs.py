@@ -1,70 +1,82 @@
 import os
-import subprocess
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,QMessageBox, QInputDialog)
+import json
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
+    QMessageBox, QInputDialog, QFileDialog
+)
 from PySide6.QtGui import QIcon
 
+def load_user_data():
+    """Carga los datos del archivo JSON y devuelve el diccionario de usuarios."""
+    # Ruta absoluta para acceder al archivo 'user.json'
+    user_json_path = '/media/isa/IsaLinux/Prog-Linux/sistemaOperativo/data/dataBaseUser/user.json'
+    
+    # Si prefieres usar una ruta relativa, usa esta línea en su lugar:
+    # user_json_path = os.path.join(os.path.dirname(__file__), 'data', 'dataBaseUser', 'user.json')
+
+    print(f"Intentando cargar el archivo JSON desde: {user_json_path}")
+    try:
+        with open(user_json_path, 'r') as f:
+            users = json.load(f)
+        return users
+    except FileNotFoundError:
+        print(f"Archivo 'user.json' no encontrado en {user_json_path}.")
+        return None
+    except json.JSONDecodeError:
+        print("Error al leer el archivo JSON.")
+        return None
+
+def get_user_id(user_name):
+    """Obtiene el id de un usuario por su nombre."""
+    users = load_user_data()
+    if users and user_name in users:
+        return users[user_name]["id"]
+    return None  # Si el usuario no se encuentra
 
 class Docs(QWidget):
-    def __init__(self, user_id, parent=None):
+    def __init__(self, user_name, parent=None):
         super().__init__(parent)
-        self.user_id = str(user_id)  # Asegúrate de que el ID sea una cadena
-        self.setWindowTitle(f"My Documents")
+        self.user_id = str(get_user_id(user_name))  # Obtener el ID del usuario
+        self.setWindowTitle("My Documents")
         self.setGeometry(200, 200, 600, 400)
 
-        # Ruta base para guardar los documentos del usuario
+        # Configurar la ruta base de los documentos
         self.base_docs_path = os.path.join(os.getcwd(), 'data', 'docs', self.user_id)
-        os.makedirs(self.base_docs_path, exist_ok=True)  # Crear el directorio del usuario si no existe
+        os.makedirs(self.base_docs_path, exist_ok=True)
 
-        # Crear subcarpetas necesarias
-        self.create_default_folders()
-
-        # Inicializa la variable docs_path aquí
         self.docs_path = self.base_docs_path
-
-        # Mantener un historial de carpetas para navegación
         self.history = [self.docs_path]
         self.history_index = 0
 
-        # Inicializa la interfaz
         self.init_ui()
 
-    def create_default_folders(self):
-        """Crear las carpetas predeterminadas dentro del directorio del usuario."""
-        default_folders = ['Downloads', 'Downloads', 'Desktop', 'Videos', 'My Docs', 'Images']
-        for folder in default_folders:
-            folder_path = os.path.join(self.base_docs_path, folder)
-            os.makedirs(folder_path, exist_ok=True)  # Crear la subcarpeta si no existe
-
     def init_ui(self):
+        """Inicializar la interfaz gráfica."""
         main_layout = QVBoxLayout(self)
-        nav_layout = QHBoxLayout()
 
         # Navegación
+        nav_layout = QHBoxLayout()
         self.back_button = QPushButton("←")
         self.forward_button = QPushButton("→")
         self.back_button.setEnabled(False)
+        self.forward_button.setEnabled(False)
         nav_layout.addWidget(self.back_button)
         nav_layout.addWidget(self.forward_button)
 
-        main_layout.addLayout(nav_layout)
-
-        # Explorador de archivos
+        # Lista de archivos
         self.file_list = QListWidget()
         self.file_list.itemDoubleClicked.connect(self.open_item)
-        self.refresh_file_list()  # Llama aquí después de inicializar docs_path
-        main_layout.addWidget(self.file_list)
 
-        # Botones para crear y eliminar
+        # Botones
         button_layout = QHBoxLayout()
         self.folder_button = QPushButton("Create Folder")
         self.file_button = QPushButton("Create File")
         self.delete_button = QPushButton("Delete Item")
-
+        self.close_button = QPushButton("Close")  # Botón de cerrar
         button_layout.addWidget(self.folder_button)
         button_layout.addWidget(self.file_button)
         button_layout.addWidget(self.delete_button)
-
-        main_layout.addLayout(button_layout)
+        button_layout.addWidget(self.close_button)
 
         # Conectar botones
         self.folder_button.clicked.connect(self.create_folder)
@@ -72,41 +84,35 @@ class Docs(QWidget):
         self.delete_button.clicked.connect(self.delete_item)
         self.back_button.clicked.connect(self.go_back)
         self.forward_button.clicked.connect(self.go_forward)
+        self.close_button.clicked.connect(self.close)  # Acción de cerrar ventana
 
+        # Añadir al layout principal
+        main_layout.addLayout(nav_layout)
+        main_layout.addWidget(self.file_list)
+        main_layout.addLayout(button_layout)
         self.setLayout(main_layout)
+
+        self.refresh_file_list()
 
     def refresh_file_list(self):
         """Actualizar la lista de archivos y carpetas."""
         self.file_list.clear()
-
         folder_icon = QIcon("data/icons/folder.png")
         file_icon = QIcon("data/icons/file.png")
-
-        # Listar elementos en la ruta de documentos del usuario
-        try:
-            for item in os.listdir(self.docs_path):
-                item_path = os.path.join(self.docs_path, item)
-                list_item = QListWidgetItem(item)
-
-                if os.path.isdir(item_path):
-                    list_item.setIcon(folder_icon)
-                else:
-                    list_item.setIcon(file_icon)
-
-                self.file_list.addItem(list_item)
-        except FileNotFoundError:
-            QMessageBox.warning(self, "Error", "The documents folder could not be found.")
+        for item in os.listdir(self.docs_path):
+            item_path = os.path.join(self.docs_path, item)
+            list_item = QListWidgetItem(item)
+            list_item.setIcon(folder_icon if os.path.isdir(item_path) else file_icon)
+            self.file_list.addItem(list_item)
 
     def open_item(self, item):
-        """Abrir el archivo o carpeta seleccionado."""
+        """Abrir una carpeta."""
         item_path = os.path.join(self.docs_path, item.text())
         if os.path.isdir(item_path):
             self.docs_path = item_path
             self.history.append(self.docs_path)
             self.history_index += 1
             self.refresh_file_list()
-            self.back_button.setEnabled(self.history_index > 0)
-            self.forward_button.setEnabled(False)
 
     def go_back(self):
         """Navegar hacia atrás en el historial."""
@@ -114,8 +120,6 @@ class Docs(QWidget):
             self.history_index -= 1
             self.docs_path = self.history[self.history_index]
             self.refresh_file_list()
-            self.back_button.setEnabled(self.history_index > 0)
-            self.forward_button.setEnabled(self.history_index < len(self.history) - 1)
 
     def go_forward(self):
         """Navegar hacia adelante en el historial."""
@@ -123,11 +127,9 @@ class Docs(QWidget):
             self.history_index += 1
             self.docs_path = self.history[self.history_index]
             self.refresh_file_list()
-            self.back_button.setEnabled(self.history_index > 0)
-            self.forward_button.setEnabled(self.history_index < len(self.history) - 1)
 
     def create_folder(self):
-        """Crear una carpeta."""
+        """Crear una nueva carpeta."""
         folder_name, ok = QInputDialog.getText(self, 'Create Folder', 'Enter folder name:')
         if ok and folder_name:
             folder_path = os.path.join(self.docs_path, folder_name)
@@ -136,50 +138,37 @@ class Docs(QWidget):
                 self.refresh_file_list()
             else:
                 QMessageBox.warning(self, "Error", f"Folder '{folder_name}' already exists!")
-                
+
     def create_file(self):
-        """Crear un archivo con contenido."""
+        """Crear un nuevo archivo."""
         file_name, ok = QInputDialog.getText(self, 'Create File', 'Enter file name:')
         if ok and file_name:
             file_path = os.path.join(self.docs_path, file_name)
             if not os.path.exists(file_path):
-                file_content, ok = QInputDialog.getMultiLineText(self, 'File Content', 'Enter file content:')
-                if ok:
-                    with open(file_path, 'w') as file:
-                        file.write(file_content)
-                    self.refresh_file_list()
+                open(file_path, 'w').close()
+                self.refresh_file_list()
             else:
                 QMessageBox.warning(self, "Error", f"File '{file_name}' already exists!")
 
     def delete_item(self):
-        """Eliminar el archivo o carpeta seleccionada."""
+        """Eliminar un archivo o carpeta."""
         current_item = self.file_list.currentItem()
         if current_item:
             item_path = os.path.join(self.docs_path, current_item.text())
-            if QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete '{current_item.text()}'?",
-                                     QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            if QMessageBox.question(self, "Confirm Delete", f"Delete '{current_item.text()}'?",
+                                    QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
                 if os.path.isdir(item_path):
-                    try:
-                        os.rmdir(item_path)  # Eliminar carpeta (debe estar vacía)
-                    except OSError:
-                        QMessageBox.warning(self, "Error", f"Folder '{current_item.text()}' is not empty!")
-                        return
+                    os.rmdir(item_path)
                 else:
-                    os.remove(item_path)  # Eliminar archivo
+                    os.remove(item_path)
                 self.refresh_file_list()
-        else:
-            QMessageBox.warning(self, "Error", "No item selected for deletion!")
 
-    def is_valid_directory(self, path):
-        """Verificar si la ruta pertenece al directorio del usuario."""
-        return path.startswith(self.base_docs_path)
+    def select_file(self):
+        """Permitir al usuario seleccionar un archivo dentro de Docs."""
+        file_name, _ = QFileDialog.getOpenFileName(self, "Select File", self.docs_path)
+        return file_name
 
-    def closeEvent(self, event):
-        """Cerrar correctamente la ventana."""
-        self.deleteLater()  
-    
-    def get_my_docs_folder(self):
-        """Devuelve la ruta de la carpeta 'My Docs'."""
-        my_docs_folder = os.path.join(self.base_docs_path, 'My Docs')
-        print(f"Ruta de 'My Docs': {my_docs_folder}")  # Para depuración
-        return my_docs_folder  
+    def select_folder(self):
+        """Permitir al usuario seleccionar una carpeta dentro de Docs."""
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder", self.docs_path)
+        return folder

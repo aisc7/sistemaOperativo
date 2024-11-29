@@ -4,9 +4,10 @@ from PySide6.QtGui import QIcon, QPixmap
 from controller.taskManager import TaskManager
 from apps.api.weatherMap import WeatherMapWindow
 from controller.appMenu import AppMenu
-from apps.userPanel import UserPanel
+from apps.adminPanel import AdminPanel
 from controller.taskBar import TaskBar
 from apps.calculator import Calculator
+from apps.userPanel import UserPanel
 from apps.trash import Trash
 from apps.docs import Docs
 import subprocess
@@ -16,13 +17,13 @@ import sys
 
 
 class Desktop(QMainWindow):
-    def __init__(self, username, user_id):  
+    def __init__(self, username, user_id):
         super().__init__()
         self.setWindowTitle("Desktop Simulation")
         self.setGeometry(100, 100, 1420, 800)
 
-        self.username = username  # Asignar el nombre de usuario recibido
-        self.user_id = user_id  # Asignar el ID del usuario recibido
+        self.username = username  # Nombre de usuario recibido
+        self.user_id = user_id  # ID del usuario recibido
 
         # Crear el widget central
         central_widget = QWidget()
@@ -44,8 +45,13 @@ class Desktop(QMainWindow):
         desktop_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         desktop_layout.setContentsMargins(20, 20, 20, 20)
 
+        # Ventanas de las aplicaciones
+        self.trash = Trash()  # Instanciar la papelera de reciclaje
+        self.docs_window = None  # Inicializar como None
+        self.weather_map_window = None  # Inicializar como None
+
         # Añadir iconos al escritorio
-        self.add_desktop_icon(desktop_layout, "User Panel", "data/icons/pc.png")
+        self.add_desktop_icon(desktop_layout, "Panel", "data/icons/pc.png")
         self.add_desktop_icon(desktop_layout, "Recycle Bin", "data/icons/trash.png")
         self.add_desktop_icon(desktop_layout, "My Documents", "data/icons/docs.png")
         self.add_desktop_icon(desktop_layout, "Weather", "data/icons/weather.png")
@@ -58,20 +64,15 @@ class Desktop(QMainWindow):
         main_layout.addWidget(self.taskbar, stretch=0)
 
         # Menú de aplicaciones
-        self.app_menu = AppMenu(self)
+        self.app_menu = AppMenu(self, user_id=self.user_id)
         self.app_menu.setVisible(False)
-        self.app_menu.setParent(self)
-        self.app_menu.raise_()
 
-        # Ventanas de las aplicaciones
+        # Administrador de tareas
         self.task_manager = TaskManager(self)
-        self.calculator = Calculator(self)
-        self.docs_window = None  # Inicializar como None
-        self.trash = Trash()  # Instanciar la papelera de reciclaje
-        self.weather_map_window = None  # Inicializar como None
-
-        # Ocultar ventanas inicialmente
         self.task_manager.hide()
+
+        # Calculadora
+        self.calculator = Calculator(self)
         self.calculator.hide()
 
         # Reloj
@@ -84,9 +85,9 @@ class Desktop(QMainWindow):
 
     def load_user_data(self):
         """Cargar los datos del usuario desde un archivo JSON."""
-        user_data_path = "data/user_data.json"  # Ruta del archivo JSON
-        
-        if os.path.exists(user_data_path):  # Verificar si el archivo existe
+        user_data_path = "data/dataBaseUser/users.json"
+
+        if os.path.exists(user_data_path):
             with open(user_data_path, "r") as f:
                 data = json.load(f)
                 user = data.get(self.username)  # Obtener los datos del usuario
@@ -127,37 +128,39 @@ class Desktop(QMainWindow):
 
     def open_docs(self):
         """Abrir documentos."""
-        if self.docs_window is None: 
-            self.docs_window = Docs(self.user_id)  
+        if self.docs_window is None:
+            self.docs_window = Docs(self.user_id)  # Pasar user_id
         if not self.docs_window.isVisible():
             self.docs_window.show()
             self.docs_window.raise_()
         self.task_manager.update_apps_in_use()
 
-    def open_user_panel(self):
-        """Abrir el panel de usuario."""
-        self.user_panel = UserPanel(self.username, self.role, self.image_path, self)
-        self.user_panel.show()
+    def open_panel(self):
+        """Abrir el panel de usuario o administrador según el rol."""
+        if self.role == "Administrator":
+            self.panel = AdminPanel(self)
+        else:
+            self.panel = UserPanel(self.username, self.role, self.image_path, self)
+        self.panel.show()
 
     def open_recycle_bin(self):
         """Abrir la papelera de reciclaje."""
-        self.trash.show()
+        if self.trash:
+            self.trash.show()
+        else:
+            print("Error: La papelera de reciclaje no está disponible.")
 
     def open_weather_map(self):
         """Abrir la ventana del mapa del clima."""
         try:
-            # Si la ventana no existe, créala
             if self.weather_map_window is None:
                 self.weather_map_window = WeatherMapWindow()
-            
-            # Si la ventana no está visible, muéstrala
             if not self.weather_map_window.isVisible():
                 self.weather_map_window.show()
                 self.weather_map_window.raise_()
-        
         except Exception as e:
             print(f"Error al abrir el mapa del clima: {e}")
-            
+
     def add_desktop_icon(self, layout, name, icon_path):
         """Añadir un ícono al escritorio."""
         icon_button = QPushButton()
@@ -166,23 +169,9 @@ class Desktop(QMainWindow):
         icon_button.setText(name)
         icon_button.setStyleSheet("text-align: left; padding: 10px; border: none;")
 
-    def update_clock(self):
-        """Actualizar el reloj (si se requiere implementación futura)."""
-        pass
-
-
-        
-    def add_desktop_icon(self, layout, name, icon_path):
-        """Añadir un ícono al escritorio."""
-        icon_button = QPushButton()
-        icon_button.setIcon(QIcon(icon_path))
-        icon_button.setIconSize(QSize(64, 64))
-        icon_button.setText(name)
-        icon_button.setStyleSheet("text-align: left; padding: 10px; border: none;")
-        
         # Conectar las acciones de los íconos
-        if name == "User Panel":
-            icon_button.clicked.connect(self.open_user_panel)
+        if name == "Panel":
+            icon_button.clicked.connect(self.open_panel)
         elif name == "Recycle Bin":
             icon_button.clicked.connect(self.open_recycle_bin)
         elif name == "My Documents":
@@ -194,17 +183,18 @@ class Desktop(QMainWindow):
 
         layout.addWidget(icon_button)
 
+    def update_clock(self):
+        """Actualizar el reloj (implementación futura)."""
+        pass
+
     def open_browser(self):
         """Abrir el navegador web predeterminado."""
         try:
             if sys.platform == "win32":
-                # Abrir el navegador predeterminado en Windows
                 subprocess.run(["start", "http://www.google.com"], shell=True)
             elif sys.platform == "darwin":
-                # Abrir el navegador predeterminado en macOS
                 subprocess.run(["open", "http://www.google.com"])
             elif sys.platform == "linux":
-                # Abrir el navegador predeterminado en Linux
                 subprocess.run(["xdg-open", "http://www.google.com"])
             else:
                 print("Sistema operativo no soportado.")

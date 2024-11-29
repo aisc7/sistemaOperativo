@@ -1,37 +1,27 @@
 {
     "Isabella": {
         "id": "777",
-        "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
-        "role": "admin"
+        "password": "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
+        "role": "Administrator"
     },
     "Ana": {
         "id": "34335",
         "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
-        "role": "user"
+        "role": "User"
     },
     "Tina": {
         "id": "1",
         "password": "7688b6ef52555962d008fff894223582c484517cea7da49ee67800adc7fc8866",
-        "role": "user"
+        "role": "User"
     },
     "Nico": {
         "id": 9,
         "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
-        "role": "user"
+        "role": "User"
     },
     "Mora": {
         "id": 6,
         "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
-        "role": "user"
-    },
-    "xd": {
-        "id": "24",
-        "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
-        "role": "user"
-    },
-    "hector": {
-        "id": "32",
-        "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
-        "role": "user"
+        "role": "User"
     }
 }
